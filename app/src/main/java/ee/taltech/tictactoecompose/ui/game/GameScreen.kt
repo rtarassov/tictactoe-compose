@@ -287,10 +287,14 @@ private fun NewGameConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Un
         title = { Text(text = stringResource(R.string.new_game_dialog_title)) },
         text = { Text(text = stringResource(R.string.new_game_dialog_message)) },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text(text = stringResource(R.string.new_game_dialog_confirm)) }
+            TextButton(onClick = onConfirm, modifier = Modifier.testTag("buttonConfirmNewGame")) {
+                Text(text = stringResource(R.string.new_game_dialog_confirm))
+            }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(text = stringResource(R.string.new_game_dialog_cancel)) }
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag("buttonCancelNewGame")) {
+                Text(text = stringResource(R.string.new_game_dialog_cancel))
+            }
         },
     )
 }

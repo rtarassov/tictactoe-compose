@@ -12,7 +12,6 @@
     <string name="status_draw">Draw</string>
     <string name="symbol_x">X</string>
     <string name="symbol_o">O</string>
-    <string name="cell_description">Cell row %1$d column %2$d</string>
 
     <string name="new_game_dialog_title">Start a new game?</string>
     <string name="new_game_dialog_message">The current game will be discarded.</string>
