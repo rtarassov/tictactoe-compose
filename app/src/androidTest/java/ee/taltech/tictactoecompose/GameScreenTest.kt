@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -149,5 +150,41 @@ class GameScreenTest {
 
         composeRule.onNodeWithTag("buttonBackToGame").performClick()
         composeRule.onNodeWithTag("statusText").assertIsDisplayed()
+    }
+    @Test
+    fun undoButton_takesBackLastMove() {
+        cell(0, 0).performClick()
+        cell(1, 1).performClick()
+
+        composeRule.onNodeWithTag("buttonUndo").performClick()
+
+        cell(1, 1).assertSymbol("")
+        cell(0, 0).assertSymbol("X")
+        composeRule.onNodeWithTag("statusText").assertTextEquals(text(R.string.status_turn, "O"))
+    }
+
+    @Test
+    fun boardSettings_changeBoardSize() {
+        composeRule.onNodeWithTag("buttonBoardSettings").performClick()
+        composeRule.onNodeWithTag("stepperRowsIncrease").performClick()
+        composeRule.onNodeWithTag("stepperRowsIncrease").performClick()
+        composeRule.onNodeWithTag("stepperColumnsIncrease").performClick()
+        composeRule.onNodeWithTag("stepperRowsValue").assertTextEquals("5")
+
+        composeRule.onNodeWithTag("buttonApplyBoardSettings").performClick()
+
+        cell(4, 3).assertIsDisplayed()
+        composeRule.onAllNodesWithTag("cell_0_0").fetchSemanticsNodes().isNotEmpty()
+    }
+
+    @Test
+    fun rotateBoardButton_keepsCellsClickable() {
+        composeRule.onNodeWithTag("buttonRotateBoard").performClick()
+        composeRule.onNodeWithTag("buttonRotateBoard").performClick()
+        composeRule.mainClock.advanceTimeBy(1_000)
+
+        cell(0, 0).performClick()
+
+        cell(0, 0).assertSymbol("X")
     }
 }

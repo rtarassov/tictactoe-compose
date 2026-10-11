@@ -194,4 +194,97 @@ class GameViewModelTest {
         assertFalse(viewModel.uiState.value.isVsAi)
         assertTrue(viewModel.uiState.value.isVsAiSelected)
     }
+    @Test
+    fun undo_takesBackLastMove_andBothMovesVsAi() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.onCellClick(0, 0)
+        viewModel.onCellClick(1, 1)
+
+        viewModel.onUndoClick()
+
+        assertNull(viewModel.uiState.value.board[1][1])
+        assertEquals(Player.O, viewModel.uiState.value.currentPlayer)
+
+        viewModel.onVsAiSelectedChange(true)
+        viewModel.onNewGameClick()
+        viewModel.onNewGameConfirmed()
+        viewModel.onCellClick(1, 1)
+        advanceTimeBy(500L)
+        assertEquals(2, viewModel.uiState.value.moveCount)
+
+        viewModel.onUndoClick()
+
+        assertEquals(0, viewModel.uiState.value.moveCount)
+        assertNull(viewModel.uiState.value.gameStartTimeMs)
+        assertFalse(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun undo_afterGameOver_isIgnored() {
+        val viewModel = createViewModel()
+        viewModel.onCellClick(0, 0)
+        viewModel.onCellClick(1, 0)
+        viewModel.onCellClick(0, 1)
+        viewModel.onCellClick(1, 1)
+        viewModel.onCellClick(0, 2)
+
+        viewModel.onUndoClick()
+
+        assertEquals(GameStatus.WON, viewModel.uiState.value.status)
+        assertEquals(5, viewModel.uiState.value.moveCount)
+    }
+
+    @Test
+    fun rotateBoard_addsQuarterTurnEachTime() {
+        val viewModel = createViewModel()
+
+        viewModel.onRotateBoardClick()
+        viewModel.onRotateBoardClick()
+
+        assertEquals(180f, viewModel.uiState.value.boardRotationDegrees)
+    }
+
+    @Test
+    fun boardSettings_applyOnUntouchedBoard_startsNewBoardImmediately() {
+        val viewModel = createViewModel()
+
+        viewModel.onBoardSettingsClick()
+        assertTrue(viewModel.uiState.value.isBoardSettingsShown)
+        viewModel.onBoardSettingsApplied(BoardSettings(rowCount = 5, columnCount = 7, winLength = 9, isMinimaxAi = true))
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isBoardSettingsShown)
+        assertEquals(5, state.rowCount)
+        assertEquals(7, state.columnCount)
+        assertEquals(7, state.boardSettings.winLength)
+        assertTrue(state.boardSettings.isMinimaxAi)
+    }
+
+    @Test
+    fun boardSettings_applyMidGame_waitsForNextGame() {
+        val viewModel = createViewModel()
+        viewModel.onCellClick(0, 0)
+
+        viewModel.onBoardSettingsApplied(BoardSettings(rowCount = 4, columnCount = 4, winLength = 3))
+
+        assertEquals(3, viewModel.uiState.value.rowCount)
+        viewModel.onNewGameClick()
+        viewModel.onNewGameConfirmed()
+        assertEquals(4, viewModel.uiState.value.rowCount)
+    }
+
+    @Test
+    fun minimaxAi_blocksImmediateThreat() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.onVsAiSelectedChange(true)
+        viewModel.onBoardSettingsApplied(BoardSettings(isMinimaxAi = true))
+
+        viewModel.onCellClick(0, 0)
+        advanceTimeBy(500L)
+        viewModel.onCellClick(0, 1)
+        advanceTimeBy(500L)
+
+        val state = viewModel.uiState.value
+        assertEquals("board: ${state.board}", Player.O, state.board[0][2])
+    }
 }

@@ -156,10 +156,13 @@ class TicTacToeGameTest {
     }
 
     @Test
-    fun fromBoardString_restoresBoardAndRecomputesResult() {
-        val game = TicTacToeGame.fromBoardString("XXX.OO...", Player.O)
+    fun fromMoves_replaysHistoryAndRecomputesResult() {
+        val moves = listOf(Cell(0, 0), Cell(1, 1), Cell(0, 1), Cell(1, 2), Cell(0, 2))
+
+        val game = TicTacToeGame.fromMoves(3, 3, 3, Player.X, moves)
 
         assertEquals("XXX.OO...", game.toBoardString())
+        assertEquals(moves, game.moveHistory)
         assertEquals(5, game.moveCount)
         assertEquals(GameStatus.WON, game.status)
         assertEquals(Player.X, game.winner)
@@ -167,24 +170,118 @@ class TicTacToeGameTest {
     }
 
     @Test
-    fun fromBoardString_inProgressGame_keepsCurrentPlayer() {
-        val game = TicTacToeGame.fromBoardString("X...O....", Player.X)
+    fun fromMoves_inProgressGame_continuesWithRightPlayer() {
+        val game = TicTacToeGame.fromMoves(3, 3, 3, Player.O, listOf(Cell(0, 0), Cell(1, 1)))
 
         assertEquals(GameStatus.IN_PROGRESS, game.status)
+        assertEquals(Player.O, game.currentPlayer)
+        assertEquals(Player.O, game.board[0][0])
+        assertEquals(Player.X, game.board[1][1])
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun fromMoves_rejectsIllegalHistory() {
+        TicTacToeGame.fromMoves(3, 3, 3, Player.X, listOf(Cell(0, 0), Cell(0, 0)))
+    }
+
+    @Test
+    fun undoMove_removesLastMoveAndGivesTurnBack() {
+        val game = TicTacToeGame()
+        game.makeMove(0, 0)
+        game.makeMove(1, 1)
+
+        val undoWasMade = game.undoMove()
+
+        assertTrue(undoWasMade)
+        assertNull(game.board[1][1])
+        assertEquals(Player.O, game.currentPlayer)
+        assertEquals(1, game.moveCount)
+        assertEquals(listOf(Cell(0, 0)), game.moveHistory)
+    }
+
+    @Test
+    fun undoMove_afterWin_reopensTheGame() {
+        val game = TicTacToeGame.fromMoves(3, 3, 3, Player.X, listOf(Cell(0, 0), Cell(1, 1), Cell(0, 1), Cell(1, 2), Cell(0, 2)))
+
+        game.undoMove()
+
+        assertEquals(GameStatus.IN_PROGRESS, game.status)
+        assertNull(game.winner)
+        assertTrue(game.winningCells.isEmpty())
         assertEquals(Player.X, game.currentPlayer)
-        assertEquals(2, game.moveCount)
         assertTrue(game.makeMove(2, 2))
     }
 
-    @Test(expected = IllegalArgumentException::class)
-    fun fromBoardString_rejectsWrongLength() {
-        TicTacToeGame.fromBoardString("X..", Player.X)
+    @Test
+    fun undoMove_onEmptyBoard_isRejected() {
+        val game = TicTacToeGame()
+
+        assertFalse(game.undoMove())
+        assertEquals(Player.X, game.currentPlayer)
+    }
+
+    @Test
+    fun customBoard_needsWinLengthInARow() {
+        val game = TicTacToeGame(rowCount = 5, columnCount = 7, winLength = 4)
+
+        game.makeMove(2, 0)
+        game.makeMove(0, 0)
+        game.makeMove(2, 1)
+        game.makeMove(0, 1)
+        game.makeMove(2, 2)
+        game.makeMove(0, 2)
+        assertEquals(GameStatus.IN_PROGRESS, game.status)
+
+        game.makeMove(2, 3)
+
+        assertEquals(GameStatus.WON, game.status)
+        assertEquals(Player.X, game.winner)
+        assertEquals(listOf(Cell(2, 0), Cell(2, 1), Cell(2, 2), Cell(2, 3)), game.winningCells)
+        assertEquals(5, game.rowCount)
+        assertEquals(7, game.columnCount)
+        assertEquals(35, game.cellCount)
+    }
+
+    @Test
+    fun customBoard_detectsWinInTheMiddleOfALine() {
+        val game = TicTacToeGame(rowCount = 4, columnCount = 4, winLength = 3)
+        game.makeMove(0, 0)
+        game.makeMove(3, 3)
+        game.makeMove(2, 2)
+        game.makeMove(3, 2)
+
+        game.makeMove(1, 1)
+
+        assertEquals(GameStatus.WON, game.status)
+        assertEquals(listOf(Cell(0, 0), Cell(1, 1), Cell(2, 2)), game.winningCells)
+    }
+
+    @Test
+    fun customBoard_longerRunThanWinLength_isStillAWin() {
+        val game = TicTacToeGame(rowCount = 3, columnCount = 6, winLength = 3)
+        game.makeMove(0, 0)
+        game.makeMove(1, 0)
+        game.makeMove(0, 1)
+        game.makeMove(1, 1)
+        game.makeMove(0, 3)
+        game.makeMove(1, 3)
+
+        game.makeMove(0, 2)
+
+        assertEquals(GameStatus.WON, game.status)
+        assertEquals(listOf(Cell(0, 0), Cell(0, 1), Cell(0, 2), Cell(0, 3)), game.winningCells)
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun fromBoardString_rejectsUnknownSymbol() {
-        TicTacToeGame.fromBoardString("X...Z....", Player.X)
+    fun customBoard_rejectsWinLengthLongerThanBoard() {
+        TicTacToeGame(rowCount = 3, columnCount = 3, winLength = 4)
     }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun customBoard_rejectsTooSmallBoard() {
+        TicTacToeGame(rowCount = 2, columnCount = 3, winLength = 3)
+    }
+
     @Test
     fun makeRandomMove_choosesOnlyEmptyCells() {
         val game = TicTacToeGame(random = Random(42))

@@ -1,5 +1,6 @@
 package ee.taltech.tictactoecompose.ui.game
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -27,11 +29,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,6 +52,7 @@ import ee.taltech.tictactoecompose.Cell
 import ee.taltech.tictactoecompose.GameStatus
 import ee.taltech.tictactoecompose.Player
 import ee.taltech.tictactoecompose.R
+import ee.taltech.tictactoecompose.TicTacToeGame
 import ee.taltech.tictactoecompose.data.GameStatsRepository
 import ee.taltech.tictactoecompose.ui.theme.LocalGameColors
 import ee.taltech.tictactoecompose.ui.theme.TictactoecomposeTheme
@@ -69,6 +76,11 @@ fun GameRoute(
         onNewGameClick = viewModel::onNewGameClick,
         onNewGameConfirmed = viewModel::onNewGameConfirmed,
         onNewGameDismissed = viewModel::onNewGameDismissed,
+        onUndoClick = viewModel::onUndoClick,
+        onRotateBoardClick = viewModel::onRotateBoardClick,
+        onBoardSettingsClick = viewModel::onBoardSettingsClick,
+        onBoardSettingsDismissed = viewModel::onBoardSettingsDismissed,
+        onBoardSettingsApplied = viewModel::onBoardSettingsApplied,
         onOpenStats = onOpenStats,
         modifier = modifier,
     )
@@ -83,6 +95,11 @@ fun GameScreen(
     onNewGameClick: () -> Unit,
     onNewGameConfirmed: () -> Unit,
     onNewGameDismissed: () -> Unit,
+    onUndoClick: () -> Unit,
+    onRotateBoardClick: () -> Unit,
+    onBoardSettingsClick: () -> Unit,
+    onBoardSettingsDismissed: () -> Unit,
+    onBoardSettingsApplied: (BoardSettings) -> Unit,
     onOpenStats: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -95,6 +112,9 @@ fun GameScreen(
                     onVsAiSelectedChange = onVsAiSelectedChange,
                     onStartingPlayerSelected = onStartingPlayerSelected,
                     onNewGameClick = onNewGameClick,
+                    onUndoClick = onUndoClick,
+                    onRotateBoardClick = onRotateBoardClick,
+                    onBoardSettingsClick = onBoardSettingsClick,
                     onOpenStats = onOpenStats,
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
@@ -111,6 +131,9 @@ fun GameScreen(
                     onVsAiSelectedChange = onVsAiSelectedChange,
                     onStartingPlayerSelected = onStartingPlayerSelected,
                     onNewGameClick = onNewGameClick,
+                    onUndoClick = onUndoClick,
+                    onRotateBoardClick = onRotateBoardClick,
+                    onBoardSettingsClick = onBoardSettingsClick,
                     onOpenStats = onOpenStats,
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
@@ -126,6 +149,13 @@ fun GameScreen(
     if (state.isNewGameConfirmationShown) {
         NewGameConfirmationDialog(onConfirm = onNewGameConfirmed, onDismiss = onNewGameDismissed)
     }
+    if (state.isBoardSettingsShown) {
+        BoardSettingsDialog(
+            currentSettings = state.boardSettings,
+            onApply = onBoardSettingsApplied,
+            onDismiss = onBoardSettingsDismissed,
+        )
+    }
 }
 
 @Composable
@@ -134,6 +164,9 @@ private fun InfoPanel(
     onVsAiSelectedChange: (Boolean) -> Unit,
     onStartingPlayerSelected: (Player) -> Unit,
     onNewGameClick: () -> Unit,
+    onUndoClick: () -> Unit,
+    onRotateBoardClick: () -> Unit,
+    onBoardSettingsClick: () -> Unit,
     onOpenStats: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -179,6 +212,17 @@ private fun InfoPanel(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = onNewGameClick, modifier = Modifier.testTag("buttonNewGame")) {
                 Text(text = stringResource(R.string.new_game))
+            }
+            Button(onClick = onUndoClick, enabled = state.canUndo, modifier = Modifier.testTag("buttonUndo")) {
+                Text(text = stringResource(R.string.undo))
+            }
+            Button(onClick = onRotateBoardClick, modifier = Modifier.testTag("buttonRotateBoard")) {
+                Text(text = stringResource(R.string.rotate_board))
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = onBoardSettingsClick, modifier = Modifier.testTag("buttonBoardSettings")) {
+                Text(text = stringResource(R.string.board_settings))
             }
             Button(onClick = onOpenStats, modifier = Modifier.testTag("buttonStatistics")) {
                 Text(text = stringResource(R.string.statistics))
@@ -233,28 +277,40 @@ private fun GameTimer(gameStartTimeMs: Long?, finishedGameDurationMs: Long?, isI
 @Composable
 private fun Board(state: GameUiState, onCellClick: (row: Int, column: Int) -> Unit, modifier: Modifier = Modifier) {
     val gameColors = LocalGameColors.current
+    val rotationDegrees by animateFloatAsState(targetValue = state.boardRotationDegrees, label = "boardRotation")
+    val largestSide = maxOf(state.rowCount, state.columnCount)
+    val cellTextSize = (40 * TicTacToeGame.DEFAULT_BOARD_SIZE / largestSide).sp
     Box(modifier = modifier.padding(16.dp), contentAlignment = Alignment.Center) {
-        Column(
+        Box(
             modifier = Modifier
                 .aspectRatio(1f)
-                .background(gameColors.boardLines),
-            verticalArrangement = Arrangement.spacedBy(3.dp),
+                .graphicsLayer { rotationZ = rotationDegrees }
+                .testTag("board"),
+            contentAlignment = Alignment.Center,
         ) {
-            for (row in state.board.indices) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(3.dp),
-                ) {
-                    for (column in state.board[row].indices) {
-                        BoardCell(
-                            player = state.board[row][column],
-                            isWinningCell = Cell(row, column) in state.winningCells,
-                            onClick = { onCellClick(row, column) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .testTag("cell_${row}_$column"),
-                        )
+            Column(
+                modifier = Modifier
+                    .aspectRatio(state.columnCount.toFloat() / state.rowCount.toFloat())
+                    .background(gameColors.boardLines),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                for (row in state.board.indices) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
+                        for (column in state.board[row].indices) {
+                            BoardCell(
+                                player = state.board[row][column],
+                                isWinningCell = Cell(row, column) in state.winningCells,
+                                textSize = cellTextSize,
+                                onClick = { onCellClick(row, column) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .testTag("cell_${row}_$column"),
+                            )
+                        }
                     }
                 }
             }
@@ -263,7 +319,13 @@ private fun Board(state: GameUiState, onCellClick: (row: Int, column: Int) -> Un
 }
 
 @Composable
-private fun BoardCell(player: Player?, isWinningCell: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun BoardCell(
+    player: Player?,
+    isWinningCell: Boolean,
+    textSize: androidx.compose.ui.unit.TextUnit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val gameColors = LocalGameColors.current
     val backgroundColor = if (isWinningCell) gameColors.cellWinning else gameColors.cellBackground
     Box(
@@ -274,7 +336,7 @@ private fun BoardCell(player: Player?, isWinningCell: Boolean, onClick: () -> Un
     ) {
         Text(
             text = symbolText(player),
-            fontSize = 40.sp,
+            fontSize = textSize,
             color = gameColors.cellText,
         )
     }
@@ -297,6 +359,104 @@ private fun NewGameConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Un
             }
         },
     )
+}
+
+@Composable
+private fun BoardSettingsDialog(
+    currentSettings: BoardSettings,
+    onApply: (BoardSettings) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var rowCount by rememberSaveable { mutableIntStateOf(currentSettings.rowCount) }
+    var columnCount by rememberSaveable { mutableIntStateOf(currentSettings.columnCount) }
+    var winLength by rememberSaveable { mutableIntStateOf(currentSettings.winLength) }
+    var isMinimaxAi by rememberSaveable { mutableStateOf(currentSettings.isMinimaxAi) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.board_settings)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                NumberStepper(
+                    label = stringResource(R.string.board_settings_rows),
+                    value = rowCount,
+                    minimum = TicTacToeGame.MIN_BOARD_SIZE,
+                    maximum = TicTacToeGame.MAX_BOARD_SIZE,
+                    onValueChange = { rowCount = it },
+                    testTag = "stepperRows",
+                )
+                NumberStepper(
+                    label = stringResource(R.string.board_settings_columns),
+                    value = columnCount,
+                    minimum = TicTacToeGame.MIN_BOARD_SIZE,
+                    maximum = TicTacToeGame.MAX_BOARD_SIZE,
+                    onValueChange = { columnCount = it },
+                    testTag = "stepperColumns",
+                )
+                NumberStepper(
+                    label = stringResource(R.string.board_settings_win_length),
+                    value = winLength,
+                    minimum = TicTacToeGame.MIN_WIN_LENGTH,
+                    maximum = maxOf(rowCount, columnCount),
+                    onValueChange = { winLength = it },
+                    testTag = "stepperWinLength",
+                )
+                Text(text = stringResource(R.string.board_settings_ai_level))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = !isMinimaxAi, onClick = { isMinimaxAi = false })
+                    Text(text = stringResource(R.string.ai_level_random))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    RadioButton(selected = isMinimaxAi, onClick = { isMinimaxAi = true }, modifier = Modifier.testTag("radioMinimax"))
+                    Text(text = stringResource(R.string.ai_level_minimax))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onApply(BoardSettings(rowCount, columnCount, winLength, isMinimaxAi)) },
+                modifier = Modifier.testTag("buttonApplyBoardSettings"),
+            ) {
+                Text(text = stringResource(R.string.board_settings_apply))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(text = stringResource(R.string.board_settings_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun NumberStepper(
+    label: String,
+    value: Int,
+    minimum: Int,
+    maximum: Int,
+    onValueChange: (Int) -> Unit,
+    testTag: String,
+) {
+    val shownValue = value.coerceIn(minimum, maximum)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(text = label, modifier = Modifier.weight(1f))
+        OutlinedButton(
+            onClick = { onValueChange(shownValue - 1) },
+            enabled = shownValue > minimum,
+            modifier = Modifier.testTag("${testTag}Decrease"),
+        ) {
+            Text(text = "−")
+        }
+        Text(
+            text = shownValue.toString(),
+            modifier = Modifier.padding(horizontal = 12.dp).testTag("${testTag}Value"),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        OutlinedButton(
+            onClick = { onValueChange(shownValue + 1) },
+            enabled = shownValue < maximum,
+            modifier = Modifier.testTag("${testTag}Increase"),
+        ) {
+            Text(text = "+")
+        }
+    }
 }
 
 private val previewState = GameUiState(
@@ -325,6 +485,11 @@ private fun GameScreenPreview() {
             onNewGameClick = {},
             onNewGameConfirmed = {},
             onNewGameDismissed = {},
+            onUndoClick = {},
+            onRotateBoardClick = {},
+            onBoardSettingsClick = {},
+            onBoardSettingsDismissed = {},
+            onBoardSettingsApplied = {},
             onOpenStats = {},
         )
     }
@@ -342,6 +507,11 @@ private fun GameScreenLandscapePreview() {
             onNewGameClick = {},
             onNewGameConfirmed = {},
             onNewGameDismissed = {},
+            onUndoClick = {},
+            onRotateBoardClick = {},
+            onBoardSettingsClick = {},
+            onBoardSettingsDismissed = {},
+            onBoardSettingsApplied = {},
             onOpenStats = {},
         )
     }

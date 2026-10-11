@@ -4,6 +4,7 @@ import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ee.taltech.tictactoecompose.GameStatus
+import ee.taltech.tictactoecompose.MinimaxAi
 import ee.taltech.tictactoecompose.Player
 import ee.taltech.tictactoecompose.TicTacToeGame
 import ee.taltech.tictactoecompose.data.GameStatsRepository
@@ -63,10 +64,53 @@ class GameViewModel(
         _uiState.update { state -> state.copy(isNewGameConfirmationShown = false) }
     }
 
+    fun onUndoClick() {
+        if (game.status != GameStatus.IN_PROGRESS || game.moveCount == 0) return
+
+        aiMoveJob?.cancel()
+        game.undoMove()
+        if (_uiState.value.isVsAi && game.currentPlayer == Player.O) {
+            game.undoMove()
+        }
+        if (game.moveCount == 0) {
+            _uiState.update { state -> state.copy(gameStartTimeMs = null) }
+        }
+        publishGame()
+        if (isAiTurn()) {
+            scheduleAiMove()
+        }
+    }
+
+    fun onRotateBoardClick() {
+        _uiState.update { state -> state.copy(boardRotationDegrees = state.boardRotationDegrees + QUARTER_TURN_DEGREES) }
+    }
+
+    fun onBoardSettingsClick() {
+        _uiState.update { state -> state.copy(isBoardSettingsShown = true) }
+    }
+
+    fun onBoardSettingsDismissed() {
+        _uiState.update { state -> state.copy(isBoardSettingsShown = false) }
+    }
+
+    fun onBoardSettingsApplied(settings: BoardSettings) {
+        val largestSide = maxOf(settings.rowCount, settings.columnCount)
+        val validSettings = settings.copy(winLength = settings.winLength.coerceAtMost(largestSide))
+        _uiState.update { state -> state.copy(boardSettings = validSettings, isBoardSettingsShown = false) }
+        if (game.moveCount == 0) {
+            startNewGame()
+        }
+    }
+
     private fun startNewGame() {
         aiMoveJob?.cancel()
         val state = _uiState.value
-        game = TicTacToeGame(state.startingPlayerSelected)
+        game = TicTacToeGame(
+            rowCount = state.boardSettings.rowCount,
+            columnCount = state.boardSettings.columnCount,
+            winLength = state.boardSettings.winLength,
+            startingPlayer = state.startingPlayerSelected,
+        )
         _uiState.update { current ->
             current.copy(
                 isVsAi = current.isVsAiSelected,
@@ -86,8 +130,19 @@ class GameViewModel(
     private fun scheduleAiMove() {
         aiMoveJob = viewModelScope.launch {
             delay(aiMoveDelayMs)
-            game.makeRandomMove()
+            makeAiMove()
             onMoveMade()
+        }
+    }
+
+    private fun makeAiMove() {
+        if (_uiState.value.boardSettings.isMinimaxAi) {
+            val bestCell = MinimaxAi.forBoard(game).chooseMove(game)
+            if (bestCell != null) {
+                game.makeMove(bestCell.row, bestCell.column)
+            }
+        } else {
+            game.makeRandomMove()
         }
     }
 
@@ -124,5 +179,6 @@ class GameViewModel(
 
     companion object {
         const val AI_MOVE_DELAY_MS = 400L
+        private const val QUARTER_TURN_DEGREES = 90f
     }
 }
