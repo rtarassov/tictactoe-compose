@@ -1,3 +1,33 @@
 <resources>
-    <string name="app_name">tictactoe-compose</string>
+    <string name="app_name">Tic-Tac-Toe</string>
+
+    <string name="mode_vs_ai">Play against AI</string>
+    <string name="starter_x">X starts</string>
+    <string name="starter_o">O starts</string>
+    <string name="new_game">New game</string>
+    <string name="statistics">Statistics</string>
+
+    <string name="status_turn">%s\'s turn</string>
+    <string name="status_winner">%s wins!</string>
+    <string name="status_draw">Draw</string>
+    <string name="symbol_x">X</string>
+    <string name="symbol_o">O</string>
+    <string name="cell_description">Cell row %1$d column %2$d</string>
+
+    <string name="new_game_dialog_title">Start a new game?</string>
+    <string name="new_game_dialog_message">The current game will be discarded.</string>
+    <string name="new_game_dialog_confirm">New game</string>
+    <string name="new_game_dialog_cancel">Cancel</string>
+
+    <string name="stats_title">Statistics</string>
+    <string name="stats_games_played">Games played</string>
+    <string name="stats_wins_x">Wins by X</string>
+    <string name="stats_wins_o">Wins by O</string>
+    <string name="stats_draws">Draws</string>
+    <string name="stats_human_wins_vs_ai">Human wins vs AI</string>
+    <string name="stats_ai_wins_vs_human">AI wins vs human</string>
+    <string name="stats_average_duration">Average game time</string>
+    <string name="duration_format">%1$d:%2$02d</string>
+    <string name="reset_statistics">Reset statistics</string>
+    <string name="back_to_game">Back to game</string>
 </resources>
