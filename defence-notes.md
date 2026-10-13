@@ -172,9 +172,9 @@ Pole vaja. Compose'is on värvid Kotlini koodis (`Color.kt`), tume variant on sa
 ## 5. Boonused (ainult `assignment-02-with-bonuses`)
 
 ### Suvaline laua suurus
-- Reeglid XML-ist kopeeritud. `GameUiState.boardSettings` = `BoardSettings(rowCount, columnCount, winLength, isMinimaxAi)`.
+- Reeglid XML-ist kopeeritud. `GameUiState.boardSettings` = `BoardSettings(rowCount, columnCount, winLength)`.
 - `Board` composable käib `state.board` ridu ja veerge tsükliga läbi — mitte midagi ei ole "9 lahtrit" kõvasti kirjas, seega suurem laud tuli peaaegu tasuta. Mitteruudukujuline: `Column(Modifier.aspectRatio(columns / rows))` ruudu sees. Tekst skaleerub `40.sp × 3 / suuremKülg`.
-- Seaded: `AlertDialog` oma sisuga: kolm `NumberStepper`-it (− väärtus +; Compose'is NumberPickerit ei ole) ja AI tase. Mustand `rememberSaveable`-s, `Apply` → `onBoardSettingsApplied(BoardSettings(...))`. Võidurida piiratakse suurema küljega. Tühjal laual rakendub kohe, muidu järgmisest mängust.
+- Seaded: `AlertDialog` oma sisuga: kolm `NumberStepper`-it (− väärtus +; Compose'is NumberPickerit ei ole). Mustand `rememberSaveable`-s, `Apply` → `onBoardSettingsApplied(BoardSettings(...))`. Võidurida piiratakse suurema küljega. Tühjal laual rakendub kohe, muidu järgmisest mängust.
 
 ### Undo
 - `onUndoClick`: `game.undoMove()`; AI-režiimis kaks korda (AI käik + enda käik); moveCount 0 → taimer nulli; ootel AI käik tühistatakse. Nupp `enabled = state.canUndo` (mäng käib ja käike > 0). Lõppenud mängus undo ei tööta, sest tulemus on juba statistikas.
@@ -184,7 +184,7 @@ Pole vaja. Compose'is on värvid Kotlini koodis (`Color.kt`), tume variant on sa
 - `graphicsLayer` pöörab ka puudutuste koordinaate, lahtrid jäävad klikitavaks (testis kontrollitud).
 
 ### Minimax
-- Sama `MinimaxAi` mis XML-is: `makeMove → rekursioon → undoMove`, alpha-beta, 3×3 lõpuni, suurel laual piiratud sügavus + hindamisfunktsioon (avatud võiduaknad) + ainult nuppude kõrval olevad lahtrid. ViewModelis: `if (boardSettings.isMinimaxAi) MinimaxAi.forBoard(game).chooseMove(game) else game.makeRandomMove()`.
+- Sama `MinimaxAi` mis XML-is: `makeMove → rekursioon → undoMove`, alpha-beta, 3×3 lõpuni, suurel laual piiratud sügavus + hindamisfunktsioon (avatud võiduaknad) + ainult nuppude kõrval olevad lahtrid. ViewModelis: `MinimaxAi.forBoard(game).chooseMove(game)` — AI mängib **alati** minimaxiga, valikut ei ole. `makeRandomMove()` jäi mootorisse ainult testide jaoks.
 - Jookseb `viewModelScope` korutiinis main-lõimel pärast `delay`-d; mõõdetult < 100 ms, seega taustalõime ei teinud.
 
 ---
