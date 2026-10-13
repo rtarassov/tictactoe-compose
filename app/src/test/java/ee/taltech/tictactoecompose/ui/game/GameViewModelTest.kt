@@ -250,14 +250,13 @@ class GameViewModelTest {
 
         viewModel.onBoardSettingsClick()
         assertTrue(viewModel.uiState.value.isBoardSettingsShown)
-        viewModel.onBoardSettingsApplied(BoardSettings(rowCount = 5, columnCount = 7, winLength = 9, isMinimaxAi = true))
+        viewModel.onBoardSettingsApplied(BoardSettings(rowCount = 5, columnCount = 7, winLength = 9))
 
         val state = viewModel.uiState.value
         assertFalse(state.isBoardSettingsShown)
         assertEquals(5, state.rowCount)
         assertEquals(7, state.columnCount)
         assertEquals(7, state.boardSettings.winLength)
-        assertTrue(state.boardSettings.isMinimaxAi)
     }
 
     @Test
@@ -274,10 +273,10 @@ class GameViewModelTest {
     }
 
     @Test
-    fun minimaxAi_blocksImmediateThreat() = runTest(testDispatcher) {
+    fun vsAi_alwaysUsesMinimax_andBlocksImmediateThreat() = runTest(testDispatcher) {
         val viewModel = createViewModel()
         viewModel.onVsAiSelectedChange(true)
-        viewModel.onBoardSettingsApplied(BoardSettings(isMinimaxAi = true))
+        viewModel.onNewGameClick()
 
         viewModel.onCellClick(0, 0)
         advanceTimeBy(500L)

@@ -136,13 +136,9 @@ class GameViewModel(
     }
 
     private fun makeAiMove() {
-        if (_uiState.value.boardSettings.isMinimaxAi) {
-            val bestCell = MinimaxAi.forBoard(game).chooseMove(game)
-            if (bestCell != null) {
-                game.makeMove(bestCell.row, bestCell.column)
-            }
-        } else {
-            game.makeRandomMove()
+        val bestCell = MinimaxAi.forBoard(game).chooseMove(game)
+        if (bestCell != null) {
+            game.makeMove(bestCell.row, bestCell.column)
         }
     }
 

@@ -3,19 +3,15 @@ package ee.taltech.tictactoecompose.ui.game
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,7 +50,6 @@ internal fun BoardSettingsDialog(
     var rowCount by rememberSaveable { mutableIntStateOf(currentSettings.rowCount) }
     var columnCount by rememberSaveable { mutableIntStateOf(currentSettings.columnCount) }
     var winLength by rememberSaveable { mutableIntStateOf(currentSettings.winLength) }
-    var isMinimaxAi by rememberSaveable { mutableStateOf(currentSettings.isMinimaxAi) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -85,19 +80,11 @@ internal fun BoardSettingsDialog(
                     onValueChange = { winLength = it },
                     testTag = "stepperWinLength",
                 )
-                Text(text = stringResource(R.string.board_settings_ai_level))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = !isMinimaxAi, onClick = { isMinimaxAi = false })
-                    Text(text = stringResource(R.string.ai_level_random))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    RadioButton(selected = isMinimaxAi, onClick = { isMinimaxAi = true }, modifier = Modifier.testTag("radioMinimax"))
-                    Text(text = stringResource(R.string.ai_level_minimax))
-                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onApply(BoardSettings(rowCount, columnCount, winLength, isMinimaxAi)) },
+                onClick = { onApply(BoardSettings(rowCount, columnCount, winLength)) },
                 modifier = Modifier.testTag("buttonApplyBoardSettings"),
             ) {
                 Text(text = stringResource(R.string.board_settings_apply))

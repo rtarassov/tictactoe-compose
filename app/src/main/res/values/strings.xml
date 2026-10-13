@@ -12,9 +12,6 @@
     <string name="board_settings_rows">Rows</string>
     <string name="board_settings_columns">Columns</string>
     <string name="board_settings_win_length">In a row to win</string>
-    <string name="board_settings_ai_level">AI level</string>
-    <string name="ai_level_random">Random</string>
-    <string name="ai_level_minimax">Minimax</string>
     <string name="board_settings_apply">Apply</string>
     <string name="board_settings_cancel">Cancel</string>
 

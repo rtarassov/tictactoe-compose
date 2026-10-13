@@ -9,7 +9,6 @@ data class BoardSettings(
     val rowCount: Int = TicTacToeGame.DEFAULT_BOARD_SIZE,
     val columnCount: Int = TicTacToeGame.DEFAULT_BOARD_SIZE,
     val winLength: Int = TicTacToeGame.DEFAULT_BOARD_SIZE,
-    val isMinimaxAi: Boolean = false,
 )
 
 data class GameUiState(
