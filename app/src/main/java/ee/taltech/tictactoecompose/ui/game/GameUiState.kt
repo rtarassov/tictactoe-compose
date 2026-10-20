@@ -11,6 +11,8 @@ data class BoardSettings(
     val winLength: Int = TicTacToeGame.DEFAULT_BOARD_SIZE,
 )
 
+// Üks muutumatu (immutable) hetkepilt kogu mänguekraanist. Muutmiseks tehakse copy(...), vana ei muudeta.
+// Ekraan on alati selle seisu funktsioon: sama seis = sama pilt.
 data class GameUiState(
     val board: List<List<Player?>> = List(TicTacToeGame.DEFAULT_BOARD_SIZE) { List(TicTacToeGame.DEFAULT_BOARD_SIZE) { null } },
     val currentPlayer: Player = Player.X,
@@ -34,6 +36,7 @@ data class GameUiState(
     val columnCount: Int
         get() = board.firstOrNull()?.size ?: 0
 
+    // Arvutatud väli (get()), mitte salvestatud: "ära salvesta, mida saad arvutada".
     val canUndo: Boolean
         get() = status == GameStatus.IN_PROGRESS && moveCount > 0
 }

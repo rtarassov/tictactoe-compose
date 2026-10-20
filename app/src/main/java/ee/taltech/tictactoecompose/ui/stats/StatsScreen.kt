@@ -36,6 +36,7 @@ fun StatsRoute(
         factory = viewModelFactory { initializer { StatsViewModel(statsRepository) } }
     ),
 ) {
+    // Ekraan kuulab statistikat. Andmeid ei saadeta navigeerimisel kaasa, hoidla on ainus tõde.
     val statistics by viewModel.statistics.collectAsStateWithLifecycle()
     StatsScreen(
         statistics = statistics,
@@ -66,6 +67,7 @@ fun StatsScreen(
         StatisticsRow(stringResource(R.string.stats_draws), statistics.draws.toString(), "statDraws")
         StatisticsRow(stringResource(R.string.stats_human_wins_vs_ai), statistics.humanWinsVsAi.toString(), "statHumanWinsVsAi")
         StatisticsRow(stringResource(R.string.stats_ai_wins_vs_human), statistics.aiWinsVsHuman.toString(), "statAiWinsVsHuman")
+        // Keskmist ei salvestata, see arvutatakse (kogukestus / mängude arv). / 60 = minutid, % 60 = sekundid.
         val averageSeconds = statistics.averageDurationMs / 1_000
         StatisticsRow(
             stringResource(R.string.stats_average_duration),

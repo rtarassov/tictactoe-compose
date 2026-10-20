@@ -15,10 +15,13 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 
+// DataStore asendab Compose-ajastul SharedPreferences'i: asünkroonne (ei blokeeri UI lõime) ja annab Flow.
+// Top-level delegaat = üks DataStore eksemplar faili kohta (kaks eksemplari samale failile on keelatud).
 val Context.gameStatsDataStore: DataStore<Preferences> by preferencesDataStore(name = "game_stats")
 
 class DataStoreGameStatsRepository(private val dataStore: DataStore<Preferences>) : GameStatsRepository {
 
+    // Tüübitud võtmed: intPreferencesKey ütleb, et väärtus on Int. Vale tüüpi ei saa kogemata kirjutada.
     private object Keys {
         val GAMES_PLAYED = intPreferencesKey("games_played")
         val WINS_X = intPreferencesKey("wins_x")
@@ -30,12 +33,14 @@ class DataStoreGameStatsRepository(private val dataStore: DataStore<Preferences>
     }
 
     override val statistics: Flow<Statistics> = dataStore.data
+        // Kui faili lugemine ebaõnnestub (IOException), näitame tühja statistikat, mitte ei crashi. Muud vead visatakse edasi.
         .catch { error ->
             if (error is IOException) emit(emptyPreferences()) else throw error
         }
         .map { preferences -> preferences.toStatistics() }
 
     override suspend fun recordGame(winner: Player?, isVsAi: Boolean, durationMs: Long) {
+        // edit { } on aatomiline: kõik väljad salvestatakse koos või mitte ükski.
         dataStore.edit { preferences ->
             val current = preferences.toStatistics()
             preferences[Keys.GAMES_PLAYED] = current.gamesPlayed + 1
@@ -53,6 +58,7 @@ class DataStoreGameStatsRepository(private val dataStore: DataStore<Preferences>
     }
 
     private fun Preferences.toStatistics(): Statistics = Statistics(
+        // ?: 0 = kui võtit pole veel (esimene käivitus või pärast Reset'i), siis 0.
         gamesPlayed = this[Keys.GAMES_PLAYED] ?: 0,
         winsX = this[Keys.WINS_X] ?: 0,
         winsO = this[Keys.WINS_O] ?: 0,

@@ -63,8 +63,10 @@ class TicTacToeGame(
         if (cells[row][column] != null) return false
 
         cells[row][column] = currentPlayer
+        // moves on undo ja pööramisel taastamise jaoks. Võitu ei arvutata moves'ist, vaid cells massiivist.
         moves.add(Cell(row, column))
         updateStatusAfterMove(Cell(row, column))
+        // Mängija vahetub alles lõpus ja ainult siis, kui mäng jätkub. Võidu korral jääb võitja "currentPlayer"-iks.
         if (status == GameStatus.IN_PROGRESS) {
             currentPlayer = currentPlayer.opponent()
         }
@@ -75,6 +77,7 @@ class TicTacToeGame(
         if (moves.isEmpty()) return false
 
         val lastMove = moves.removeAt(moves.size - 1)
+        // Käik antakse tagasi sellele, kes selle käigu tegi. loeme lahtrist, kas seal oli X või O
         currentPlayer = cells[lastMove.row][lastMove.column] ?: currentPlayer
         cells[lastMove.row][lastMove.column] = null
         status = GameStatus.IN_PROGRESS
@@ -125,12 +128,15 @@ class TicTacToeGame(
         }
     }
 
+    // EI käi kõiki lahtreid läbi. Vaatab ainult viimase käigu lahtrit, sest uus võidurida saab tekkida ainult läbi selle.
+    // Neli suunda: horisontaal, vertikaal ja kaks diagonaali. Igas suunas loeb samu sümboleid tagasi ja edasi.
     private fun findWinningLineThrough(cell: Cell): List<Cell>? {
         val player = cells[cell.row][cell.column] ?: return null
         for (direction in LINE_DIRECTIONS) {
             val backwards = collectSameSymbols(cell, player, -direction.rowStep, -direction.columnStep)
             val forwards = collectSameSymbols(cell, player, direction.rowStep, direction.columnStep)
             val line = backwards.reversed() + cell + forwards
+            // VÄHEMALT winLength, mitte täpselt: ka pikem rida (nt 4 järjest, kui vaja 3) on võit.
             if (line.size >= winLength) {
                 return line
             }

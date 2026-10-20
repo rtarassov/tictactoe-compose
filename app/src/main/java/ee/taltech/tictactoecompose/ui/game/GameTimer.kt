@@ -14,7 +14,10 @@ import kotlinx.coroutines.delay
 
 @Composable
 internal fun GameTimer(gameStartTimeMs: Long?, finishedGameDurationMs: Long?, isInProgress: Boolean) {
+    // remember = väärtus säilib recompositionite vahel (muidu oleks iga joonistusega uus). Ainult NÄIDU jaoks.
     var nowMs by remember { mutableLongStateOf(android.os.SystemClock.elapsedRealtime()) }
+    // Korutiin, mis käivitub, kui composable ekraanile tuleb, ja tühistatakse, kui võtmed (algusaeg, kas käib) muutuvad.
+    // Uuendab näitu kord sekundis. Aeg ise arvutatakse ajatemplist, mitte ei loeta sekundeid kokku.
     LaunchedEffect(gameStartTimeMs, isInProgress) {
         while (gameStartTimeMs != null && isInProgress) {
             nowMs = android.os.SystemClock.elapsedRealtime()
@@ -26,6 +29,7 @@ internal fun GameTimer(gameStartTimeMs: Long?, finishedGameDurationMs: Long?, is
         finishedGameDurationMs != null -> finishedGameDurationMs
         else -> nowMs - gameStartTimeMs
     }
+    // / 60 = täisminutid, % 60 = üle jäänud sekundid (125 s → 2:05).
     val totalSeconds = elapsedMs / 1_000
     Text(
         text = stringResource(R.string.duration_format, totalSeconds / 60, totalSeconds % 60),

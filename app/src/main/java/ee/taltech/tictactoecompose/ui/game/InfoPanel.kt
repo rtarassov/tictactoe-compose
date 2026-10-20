@@ -37,6 +37,7 @@ internal fun InfoPanel(
 ) {
     Column(
         modifier = modifier
+            // Laseb kerida, kui landscape'is ei mahu kõik nupud ära.
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -45,6 +46,7 @@ internal fun InfoPanel(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = stringResource(R.string.mode_vs_ai))
             Spacer(modifier = Modifier.width(8.dp))
+            // Value/event paar: lüliti näitab seisu (checked) ja teatab muutusest (onCheckedChange). Ise ta seisu ei hoia.
             Switch(
                 checked = state.isVsAiSelected,
                 onCheckedChange = onVsAiSelectedChange,
@@ -78,6 +80,7 @@ internal fun InfoPanel(
             Button(onClick = onNewGameClick, modifier = Modifier.testTag("buttonNewGame")) {
                 Text(text = stringResource(R.string.new_game))
             }
+            // enabled = state.canUndo: nupp on hall, kui mäng on läbi või ühtegi käiku pole.
             Button(onClick = onUndoClick, enabled = state.canUndo, modifier = Modifier.testTag("buttonUndo")) {
                 Text(text = stringResource(R.string.undo))
             }
@@ -106,6 +109,7 @@ private fun StartingPlayerOption(label: String, isSelected: Boolean, onSelect: (
 
 @Composable
 internal fun statusText(state: GameUiState): String = when (state.status) {
+    // stringResource + %s: üks tekst "%s wins!" kõigile võitjatele, tekstid strings.xml-is (tõlgitavad).
     GameStatus.IN_PROGRESS -> stringResource(R.string.status_turn, symbolText(state.currentPlayer))
     GameStatus.WON -> stringResource(R.string.status_winner, symbolText(state.winner))
     GameStatus.DRAW -> stringResource(R.string.status_draw)

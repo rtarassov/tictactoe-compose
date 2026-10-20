@@ -21,12 +21,15 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun TictactoecomposeTheme(
+    // isSystemInDarkTheme() loeb telefoni seadistust. Kui kasutaja seda muudab, luuakse Activity uuesti ja värvid vahetuvad.
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
+    // dynamicColor on välja lülitatud: süsteem ei tohi laua värve taustapildi järgi ümber värvida, sest need kannavad tähendust.
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val gameColors = if (darkTheme) DarkGameColors else LightGameColors
 
+    // Annab valitud laua värvid kõigile composable'itele selle teema sees.
     CompositionLocalProvider(LocalGameColors provides gameColors) {
         MaterialTheme(
             colorScheme = colorScheme,

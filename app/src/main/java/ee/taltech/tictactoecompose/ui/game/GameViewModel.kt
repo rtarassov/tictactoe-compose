@@ -16,23 +16,32 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+// ViewModel = mängu "aju" ekraani jaoks. Elab pööramise üle (Activity luuakse uuesti, ViewModel jääb alles),
+// seega ei ole vaja onSaveInstanceState'i. Kursuse reegel: mängureeglid ei kuulu composable'isse.
 class GameViewModel(
     private val statsRepository: GameStatsRepository,
+    // Kell antakse lambdana ette, et testis saaks anda võltskella. elapsedRealtime = ms alates telefoni käivitamisest,
+    // MITTE kellaaeg. Ei hüppa, kui kasutaja muudab kellaaega, seega sobib kestuse mõõtmiseks.
     private val currentTimeMs: () -> Long = { SystemClock.elapsedRealtime() },
     private val aiMoveDelayMs: Long = AI_MOVE_DELAY_MS,
 ) : ViewModel() {
 
+    // Sama reeglite klass mis XML-äpis. ViewModel hoiab seda ja teeb sellest ekraanile hetkepildi (GameUiState).
     private var game = TicTacToeGame()
     private var aiMoveJob: Job? = null
 
+    // Kaks muutujat: _uiState on private ja muudetav (ainult ViewModel muudab), uiState on avalik ja ainult loetav.
+    // StateFlow = voog, millel on alati praegune väärtus ja mis teatab muutustest. Ekraan kuulab seda.
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
     fun onCellClick(row: Int, column: Int) {
+        // Kui AI "mõtleb" (400 ms ootel), ignoreerime puudutusi, muidu saaks inimene teha AI eest käigu.
         if (isAiTurn()) return
         val moveWasMade = game.makeMove(row, column)
         if (!moveWasMade) return
 
+        // onMoveMade kutsutakse ALATI pärast õnnestunud käiku, ka siis kui mäng just lõppes: seal salvestatakse statistika.
         onMoveMade()
         if (isAiTurn()) {
             scheduleAiMove()
@@ -40,6 +49,8 @@ class GameViewModel(
     }
 
     fun onVsAiSelectedChange(isVsAiSelected: Boolean) {
+        // update { copy(...) }: vana seisu ei muudeta, tehakse uus koopia muudetud väljaga. ?Aatomiline? ja turvaline.
+        // Muudame ainult lüliti asendit (valikut). Käimasolev mäng jääb samaks, isVsAi võetakse kasutusele uues mängus.
         _uiState.update { state -> state.copy(isVsAiSelected = isVsAiSelected) }
     }
 
@@ -49,6 +60,8 @@ class GameViewModel(
 
     fun onNewGameClick() {
         if (game.status == GameStatus.IN_PROGRESS && game.moveCount > 0) {
+            // Dialoog on lihtsalt seisu väli. Ekraan näitab dialoogi, kui see on true. Pööramisel jääb ViewModel alles,
+            // seega dialoog on pärast pööramist ikka lahti ilma lisakoodita.
             _uiState.update { state -> state.copy(isNewGameConfirmationShown = true) }
         } else {
             startNewGame()
@@ -65,10 +78,14 @@ class GameViewModel(
     }
 
     fun onUndoClick() {
+        // Lõppenud mängus undo ei tööta: tulemus on juba statistikas ja muidu saaks sama mängu kaks korda kirja panna.
         if (game.status != GameStatus.IN_PROGRESS || game.moveCount == 0) return
 
+        // Kui AI ootas käiku, tühistame selle.
         aiMoveJob?.cancel()
         game.undoMove()
+        // AI vastu: kui pärast tagasivõtmist on AI kord, võtame tagasi ka inimese käigu. Muidu teeks AI 400 ms pärast
+        // lihtsalt uue käigu ja undo näiks nagu ei teeks midagi. Inimene tahab tagasi võtta OMA käigu.
         if (_uiState.value.isVsAi && game.currentPlayer == Player.O) {
             game.undoMove()
         }
@@ -82,6 +99,7 @@ class GameViewModel(
     }
 
     fun onRotateBoardClick() {
+        // Seisus on SIHTNURK (iga vajutus +90). Board.kt animeerib selle sihtnurgani, seega kiire topeltvajutus lõpeb 180° peal.
         _uiState.update { state -> state.copy(boardRotationDegrees = state.boardRotationDegrees + QUARTER_TURN_DEGREES) }
     }
 
@@ -94,9 +112,11 @@ class GameViewModel(
     }
 
     fun onBoardSettingsApplied(settings: BoardSettings) {
+        // Võidurida ei saa olla pikem kui laua suurem külg (coerceAtMost = "maksimaalselt nii palju").
         val largestSide = maxOf(settings.rowCount, settings.columnCount)
         val validSettings = settings.copy(winLength = settings.winLength.coerceAtMost(largestSide))
         _uiState.update { state -> state.copy(boardSettings = validSettings, isBoardSettingsShown = false) }
+        // Tühjal laual rakendub kohe, pooleli mängu ei katkesta: siis kehtib järgmisest mängust.
         if (game.moveCount == 0) {
             startNewGame()
         }
@@ -127,6 +147,9 @@ class GameViewModel(
     private fun isAiTurn(): Boolean =
         _uiState.value.isVsAi && game.status == GameStatus.IN_PROGRESS && game.currentPlayer == Player.O
 
+    // Korutiin viewModelScope'is: tühistatakse automaatselt, kui ViewModel hävib. delay() EI blokeeri UI lõime
+    // (erinevalt Thread.sleep'ist): vahepeal joonistatakse X ekraanile. Job jäetakse meelde, et seda saaks tühistada.
+    // Pööramisel ViewModel jääb alles, seega ootel käik jääb ka alles: XML-i "planeeri uuesti" trikki pole vaja.
     private fun scheduleAiMove() {
         aiMoveJob = viewModelScope.launch {
             delay(aiMoveDelayMs)
@@ -150,6 +173,7 @@ class GameViewModel(
             finishedGameDurationMs = now - gameStartTimeMs
             val winner = game.winner
             val isVsAi = _uiState.value.isVsAi
+            // recordGame on suspend (DataStore kirjutab kettale), seega kutsume seda korutiinis.
             viewModelScope.launch {
                 statsRepository.recordGame(winner, isVsAi, finishedGameDurationMs)
             }
@@ -160,6 +184,8 @@ class GameViewModel(
         publishGame()
     }
 
+    // Kopeerib mängu olulised väljad uude GameUiState'i. Kui seis muutub, joonistab Compose ekraani uuesti (recomposition).
+    // game.board annab uue listi koopia, nii et vana hetkepilt ei muutu kunagi.
     private fun publishGame() {
         _uiState.update { state ->
             state.copy(

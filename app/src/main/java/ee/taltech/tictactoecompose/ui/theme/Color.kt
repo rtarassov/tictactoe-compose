@@ -12,6 +12,8 @@ val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
+// Äpi enda värvid (laud), mida Material teemas pole. @Immutable ütleb Compose'ile, et objekt ei muutu kunagi.
+// Compose'is ei ole values-night kausta vaja: tume variant on lihtsalt teine objekt samas failis.
 @Immutable
 data class GameColors(
     val boardLines: Color,
@@ -34,4 +36,6 @@ val DarkGameColors = GameColors(
     cellText = Color(0xFFF5F5F5),
 )
 
+// CompositionLocal: väärtus, mis on kättesaadav kõigile composable'itele allpool (LocalGameColors.current),
+// ilma et peaks parameetrina edasi andma. Ainult teema jaoks, mitte andmete jaoks (kursuse reegel).
 val LocalGameColors = staticCompositionLocalOf { LightGameColors }

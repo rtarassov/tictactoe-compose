@@ -24,6 +24,7 @@ import ee.taltech.tictactoecompose.TicTacToeGame
 
 @Composable
 internal fun NewGameConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    // onDismissRequest = vajutus dialoogist väljapoole või tagasi-nupp. Ka see sulgeb dialoogi (sama mis Cancel).
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.new_game_dialog_title)) },
@@ -47,6 +48,7 @@ internal fun BoardSettingsDialog(
     onApply: (BoardSettings) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    // Dialoogi mustandväärtused. rememberSaveable = säilivad ka pööramisel. ViewModeli lähevad alles Apply vajutusel.
     var rowCount by rememberSaveable { mutableIntStateOf(currentSettings.rowCount) }
     var columnCount by rememberSaveable { mutableIntStateOf(currentSettings.columnCount) }
     var winLength by rememberSaveable { mutableIntStateOf(currentSettings.winLength) }
@@ -76,6 +78,7 @@ internal fun BoardSettingsDialog(
                     label = stringResource(R.string.board_settings_win_length),
                     value = winLength,
                     minimum = TicTacToeGame.MIN_WIN_LENGTH,
+                    // Võidurea maksimum muutub kohe, kui ridu või veerge muudetakse.
                     maximum = maxOf(rowCount, columnCount),
                     onValueChange = { winLength = it },
                     testTag = "stepperWinLength",
@@ -96,6 +99,7 @@ internal fun BoardSettingsDialog(
     )
 }
 
+// Compose'is ei ole NumberPickerit, seega oma väike komponent: silt, − nupp, väärtus, + nupp.
 @Composable
 private fun NumberStepper(
     label: String,
@@ -105,6 +109,7 @@ private fun NumberStepper(
     onValueChange: (Int) -> Unit,
     testTag: String,
 ) {
+    // coerceIn = hoia väärtus min ja max vahel (nt kui ridu vähendati ja võidurida jäi liiga pikaks).
     val shownValue = value.coerceIn(minimum, maximum)
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(text = label, modifier = Modifier.weight(1f))
