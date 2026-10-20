@@ -103,7 +103,7 @@ Esimene lõpetab kuulamise, kui äpp on taustal; teine kuulaks edasi. Kursuse so
 Selle järgi, **mis juhtus**, mitte mida teha: `onCellClick`, `onNewGameConfirmed`, `onVsAiSelectedChange`. ViewModel otsustab, mida see tähendab.
 
 **Režiimi lüliti — miks kaks välja (`isVsAiSelected` ja `isVsAi`)?**
-`isVsAiSelected` on lüliti asend (kasutaja valik), `isVsAi` on käimasoleva mängu režiim. Lüliti keeramine keset mängu ei muuda käimasolevat mängu; uus mäng võtab valiku kasutusele. XML-is tegi seda `Switch` ise + `startNewGame` luges väärtuse.
+`isVsAiSelected` on lüliti asend (kasutaja valik), `isVsAi` on käimasoleva mängu režiim. Lüliti keeramine keset mängu ei muuda käimasolevat mängu; uus mäng võtab valiku kasutusele. **Tühjal laual** (ühtegi käiku pole) rakendub lüliti kohe: `onVsAiSelectedChange` paneb ka `isVsAi` ja kui "O starts" on valitud, teeb AI kohe esimese käigu.
 
 ### AI viivitus
 

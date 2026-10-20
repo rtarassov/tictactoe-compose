@@ -50,8 +50,18 @@ class GameViewModel(
 
     fun onVsAiSelectedChange(isVsAiSelected: Boolean) {
         // update { copy(...) }: vana seisu ei muudeta, tehakse uus koopia muudetud väljaga. ?Aatomiline? ja turvaline.
-        // Muudame ainult lüliti asendit (valikut). Käimasolev mäng jääb samaks, isVsAi võetakse kasutusele uues mängus.
+        // Lüliti asend (valik) muutub alati. Pooleli mängu režiim jääb samaks ja uus režiim kehtib alates järgmisest mängust.
         _uiState.update { state -> state.copy(isVsAiSelected = isVsAiSelected) }
+
+        // Tühjal laual (ühtegi käiku pole) rakendub režiim kohe, sest mäng pole tegelikult veel alanud.
+        if (game.moveCount == 0) {
+            aiMoveJob?.cancel()
+            _uiState.update { state -> state.copy(isVsAi = isVsAiSelected) }
+            // Kui "O starts" on valitud ja AI lülitati sisse, on kohe AI kord ja AI teeb esimese käigu.
+            if (isAiTurn()) {
+                scheduleAiMove()
+            }
+        }
     }
 
     fun onStartingPlayerSelected(startingPlayer: Player) {

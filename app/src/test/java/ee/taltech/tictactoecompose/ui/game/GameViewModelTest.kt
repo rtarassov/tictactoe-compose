@@ -286,4 +286,44 @@ class GameViewModelTest {
         val state = viewModel.uiState.value
         assertEquals("board: ${state.board}", Player.O, state.board[0][2])
     }
+    @Test
+    fun vsAiToggle_onUntouchedBoard_appliesImmediately() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+
+        viewModel.onVsAiSelectedChange(true)
+        viewModel.onCellClick(1, 1)
+        advanceTimeBy(500L)
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isVsAi)
+        assertEquals(2, state.moveCount)
+        assertEquals(Player.X, state.currentPlayer)
+    }
+
+    @Test
+    fun vsAiToggle_onUntouchedBoardWithOStarting_aiOpensImmediately() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.onStartingPlayerSelected(Player.O)
+        viewModel.onNewGameClick()
+
+        viewModel.onVsAiSelectedChange(true)
+        advanceTimeBy(500L)
+
+        assertEquals(1, viewModel.uiState.value.moveCount)
+        assertEquals(Player.X, viewModel.uiState.value.currentPlayer)
+    }
+
+    @Test
+    fun vsAiToggle_offBeforeAiOpens_cancelsAiMove() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.onStartingPlayerSelected(Player.O)
+        viewModel.onVsAiSelectedChange(true)
+        viewModel.onNewGameClick()
+
+        viewModel.onVsAiSelectedChange(false)
+        advanceTimeBy(500L)
+
+        assertEquals(0, viewModel.uiState.value.moveCount)
+        assertFalse(viewModel.uiState.value.isVsAi)
+    }
 }
