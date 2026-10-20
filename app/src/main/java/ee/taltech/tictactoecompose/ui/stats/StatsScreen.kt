@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -56,9 +54,8 @@ fun StatsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(text = stringResource(R.string.stats_title), style = MaterialTheme.typography.headlineMedium)
         StatisticsRow(stringResource(R.string.stats_games_played), statistics.gamesPlayed.toString(), "statGamesPlayed")
@@ -67,7 +64,9 @@ fun StatsScreen(
         StatisticsRow(stringResource(R.string.stats_draws), statistics.draws.toString(), "statDraws")
         StatisticsRow(stringResource(R.string.stats_human_wins_vs_ai), statistics.humanWinsVsAi.toString(), "statHumanWinsVsAi")
         StatisticsRow(stringResource(R.string.stats_ai_wins_vs_human), statistics.aiWinsVsHuman.toString(), "statAiWinsVsHuman")
-        // Keskmist ei salvestata, see arvutatakse (kogukestus / mängude arv). / 60 = minutid, % 60 = sekundid.
+        // averageDurationMs on keskmine mänguaeg MILLISEKUNDITES (arvutatud Statistics.kt-s: kogukestus / mängude arv).
+        // / 1_000 teeb millisekundid sekunditeks (1_000 = 1000, alakriips on ainult loetavuse jaoks).
+        // Siis / 60 = täisminutid ja % 60 = üle jäänud sekundid, et näidata "2:05", mitte "125000".
         val averageSeconds = statistics.averageDurationMs / 1_000
         StatisticsRow(
             stringResource(R.string.stats_average_duration),

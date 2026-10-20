@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ee.taltech.tictactoecompose.R
 import ee.taltech.tictactoecompose.TicTacToeGame
+import ee.taltech.tictactoecompose.ui.FittingText
 
 @Composable
 internal fun NewGameConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
@@ -112,7 +113,8 @@ private fun NumberStepper(
     // coerceIn = hoia väärtus min ja max vahel (nt kui ridu vähendati ja võidurida jäi liiga pikaks).
     val shownValue = value.coerceIn(minimum, maximum)
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = label, modifier = Modifier.weight(1f))
+        // Silt jääb ühele reale ja läheb vajadusel väiksemaks, et dialoog mahuks ka väikesel landscape-ekraanil.
+        FittingText(text = label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         OutlinedButton(
             onClick = { onValueChange(shownValue - 1) },
             enabled = shownValue > minimum,

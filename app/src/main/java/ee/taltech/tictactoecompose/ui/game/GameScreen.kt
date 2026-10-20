@@ -106,7 +106,9 @@ fun GameScreen(
                     onRotateBoardClick = onRotateBoardClick,
                     onBoardSettingsClick = onBoardSettingsClick,
                     onOpenStats = onOpenStats,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    // Portree: info-osa võtab nii palju kõrgust kui vaja, laud saab ülejäänu (weight allpool).
+                    // Kui nuppudele on vaja rohkem ruumi, jääb laud (ja selle lahtrid) väiksemaks, aga midagi ei lähe üle ääre.
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 Board(
                     state = state,

@@ -2,17 +2,16 @@ package ee.taltech.tictactoecompose.ui.game
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import ee.taltech.tictactoecompose.GameStatus
 import ee.taltech.tictactoecompose.Player
 import ee.taltech.tictactoecompose.R
+import ee.taltech.tictactoecompose.ui.FittingText
 
 @Composable
 internal fun InfoPanel(
@@ -36,15 +36,17 @@ internal fun InfoPanel(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            // Laseb kerida, kui landscape'is ei mahu kõik nupud ära.
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = stringResource(R.string.mode_vs_ai))
+            // weight(1f, fill = false): tekst saab ainult selle ruumi, mis lülitist üle jääb, ja ei võta rohkem kui vaja.
+            FittingText(
+                text = stringResource(R.string.mode_vs_ai),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f, fill = false),
+            )
             Spacer(modifier = Modifier.width(8.dp))
             // Value/event paar: lüliti näitab seisu (checked) ja teatab muutusest (onCheckedChange). Ise ta seisu ei hoia.
             Switch(
@@ -58,15 +60,17 @@ internal fun InfoPanel(
                 label = stringResource(R.string.starter_x),
                 isSelected = state.startingPlayerSelected == Player.X,
                 onSelect = { onStartingPlayerSelected(Player.X) },
+                modifier = Modifier.weight(1f, fill = false),
             )
             Spacer(modifier = Modifier.width(8.dp))
             StartingPlayerOption(
                 label = stringResource(R.string.starter_o),
                 isSelected = state.startingPlayerSelected == Player.O,
                 onSelect = { onStartingPlayerSelected(Player.O) },
+                modifier = Modifier.weight(1f, fill = false),
             )
         }
-        Text(
+        FittingText(
             text = statusText(state),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.testTag("statusText"),
@@ -76,39 +80,65 @@ internal fun InfoPanel(
             finishedGameDurationMs = state.finishedGameDurationMs,
             isInProgress = state.status == GameStatus.IN_PROGRESS,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onNewGameClick, modifier = Modifier.testTag("buttonNewGame")) {
-                Text(text = stringResource(R.string.new_game))
-            }
+        // fillMaxWidth + iga nupp weight(1f): rida on täpselt paneeli laiune ja nupud jagavad selle võrdselt,
+        // seega rida ei saa kunagi ekraanist laiemaks minna.
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GameButton(
+                text = stringResource(R.string.new_game),
+                onClick = onNewGameClick,
+                modifier = Modifier.weight(1f).testTag("buttonNewGame"),
+            )
             // enabled = state.canUndo: nupp on hall, kui mäng on läbi või ühtegi käiku pole.
-            Button(onClick = onUndoClick, enabled = state.canUndo, modifier = Modifier.testTag("buttonUndo")) {
-                Text(text = stringResource(R.string.undo))
-            }
-            Button(onClick = onRotateBoardClick, modifier = Modifier.testTag("buttonRotateBoard")) {
-                Text(text = stringResource(R.string.rotate_board))
-            }
+            GameButton(
+                text = stringResource(R.string.undo),
+                onClick = onUndoClick,
+                enabled = state.canUndo,
+                modifier = Modifier.weight(1f).testTag("buttonUndo"),
+            )
+            GameButton(
+                text = stringResource(R.string.rotate_board),
+                onClick = onRotateBoardClick,
+                modifier = Modifier.weight(1f).testTag("buttonRotateBoard"),
+            )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onBoardSettingsClick, modifier = Modifier.testTag("buttonBoardSettings")) {
-                Text(text = stringResource(R.string.board_settings))
-            }
-            Button(onClick = onOpenStats, modifier = Modifier.testTag("buttonStatistics")) {
-                Text(text = stringResource(R.string.statistics))
-            }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GameButton(
+                text = stringResource(R.string.board_settings),
+                onClick = onBoardSettingsClick,
+                modifier = Modifier.weight(1f).testTag("buttonBoardSettings"),
+            )
+            GameButton(
+                text = stringResource(R.string.statistics),
+                onClick = onOpenStats,
+                modifier = Modifier.weight(1f).testTag("buttonStatistics"),
+            )
         }
     }
 }
 
+// Üks nupp, mille tekst mahub alati nupu sisse. Väiksem sisemine vahe (contentPadding), et tekstile jääks rohkem ruumi.
 @Composable
-private fun StartingPlayerOption(label: String, isSelected: Boolean, onSelect: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+private fun GameButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 8.dp),
+    ) {
+        FittingText(text = text, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
+private fun StartingPlayerOption(label: String, isSelected: Boolean, onSelect: () -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         RadioButton(selected = isSelected, onClick = onSelect, modifier = Modifier.testTag("starter$label"))
-        Text(text = label)
+        FittingText(text = label, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
 @Composable
-internal fun statusText(state: GameUiState): String = when (state.status) {
+private fun statusText(state: GameUiState): String = when (state.status) {
     // stringResource + %s: üks tekst "%s wins!" kõigile võitjatele, tekstid strings.xml-is (tõlgitavad).
     GameStatus.IN_PROGRESS -> stringResource(R.string.status_turn, symbolText(state.currentPlayer))
     GameStatus.WON -> stringResource(R.string.status_winner, symbolText(state.winner))
