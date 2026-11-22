@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Tic-Tac-Toe</string>
+    <string name="app_name">Tic-Tac-Toe Compose</string>
 
     <string name="mode_vs_ai">Play against AI</string>
     <string name="starter_x">X starts</string>
