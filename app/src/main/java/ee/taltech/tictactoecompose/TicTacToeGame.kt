@@ -1,7 +1,5 @@
 package ee.taltech.tictactoecompose
 
-import kotlin.random.Random
-
 enum class Player {
     X, O;
 
@@ -17,7 +15,6 @@ class TicTacToeGame(
     val columnCount: Int = DEFAULT_BOARD_SIZE,
     val winLength: Int = DEFAULT_BOARD_SIZE,
     val startingPlayer: Player = Player.X,
-    private val random: Random = Random.Default,
 ) {
 
     init {
@@ -31,9 +28,6 @@ class TicTacToeGame(
 
     val board: List<List<Player?>>
         get() = cells.map { row -> row.toList() }
-
-    val moveHistory: List<Cell>
-        get() = moves.toList()
 
     val moveCount: Int
         get() = moves.size
@@ -63,7 +57,7 @@ class TicTacToeGame(
         if (cells[row][column] != null) return false
 
         cells[row][column] = currentPlayer
-        // moves on undo ja pööramisel taastamise jaoks. Võitu ei arvutata moves'ist, vaid cells massiivist.
+        // moves on undo jaoks (pööramisel hoiab mängu alles ViewModel). Võitu ei arvutata moves'ist, vaid cells massiivist.
         moves.add(Cell(row, column))
         updateStatusAfterMove(Cell(row, column))
         // Mängija vahetub alles lõpus ja ainult siis, kui mäng jätkub. Võidu korral jääb võitja "currentPlayer"-iks.
@@ -86,15 +80,6 @@ class TicTacToeGame(
         return true
     }
 
-    fun makeRandomMove(): Cell? {
-        if (status != GameStatus.IN_PROGRESS) return null
-        val emptyCells = emptyCells()
-        if (emptyCells.isEmpty()) return null
-        val chosenCell = emptyCells.random(random)
-        makeMove(chosenCell.row, chosenCell.column)
-        return chosenCell
-    }
-
     fun emptyCells(): List<Cell> {
         val emptyCells = mutableListOf<Cell>()
         for (row in 0 until rowCount) {
@@ -105,16 +90,6 @@ class TicTacToeGame(
             }
         }
         return emptyCells
-    }
-
-    fun toBoardString(): String {
-        val boardString = StringBuilder()
-        for (row in 0 until rowCount) {
-            for (column in 0 until columnCount) {
-                boardString.append(symbolOf(cells[row][column]))
-            }
-        }
-        return boardString.toString()
     }
 
     private fun updateStatusAfterMove(lastMove: Cell) {
@@ -163,34 +138,11 @@ class TicTacToeGame(
         const val MIN_BOARD_SIZE = 3
         const val MAX_BOARD_SIZE = 10
         const val MIN_WIN_LENGTH = 3
-        private const val SYMBOL_X = 'X'
-        private const val SYMBOL_O = 'O'
-        private const val SYMBOL_EMPTY = '.'
         private val LINE_DIRECTIONS = listOf(
             LineDirection(rowStep = 0, columnStep = 1),
             LineDirection(rowStep = 1, columnStep = 0),
             LineDirection(rowStep = 1, columnStep = 1),
             LineDirection(rowStep = 1, columnStep = -1),
         )
-
-        fun fromMoves(
-            rowCount: Int,
-            columnCount: Int,
-            winLength: Int,
-            startingPlayer: Player,
-            moves: List<Cell>,
-        ): TicTacToeGame {
-            val game = TicTacToeGame(rowCount, columnCount, winLength, startingPlayer)
-            for (move in moves) {
-                require(game.makeMove(move.row, move.column)) { "Illegal move in history: $move" }
-            }
-            return game
-        }
-
-        private fun symbolOf(player: Player?): Char = when (player) {
-            Player.X -> SYMBOL_X
-            Player.O -> SYMBOL_O
-            null -> SYMBOL_EMPTY
-        }
     }
 }

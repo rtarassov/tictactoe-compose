@@ -7,8 +7,9 @@ import kotlin.random.Random
 class MinimaxAiTimingTest {
 
     private fun measureChooseMoveMs(rowCount: Int, columnCount: Int, winLength: Int, prefilledMoves: Int): Long {
-        val game = TicTacToeGame(rowCount, columnCount, winLength, random = Random(5))
-        repeat(prefilledMoves) { game.makeRandomMove() }
+        val game = TicTacToeGame(rowCount, columnCount, winLength)
+        val moveRandom = Random(5)
+        repeat(prefilledMoves) { playRandomMove(game, moveRandom) }
         val ai = MinimaxAi.forBoard(game, Random(5))
         val startedAt = System.nanoTime()
         ai.chooseMove(game)

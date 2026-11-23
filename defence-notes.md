@@ -184,7 +184,7 @@ Pole vaja. Compose'is on värvid Kotlini koodis (`Color.kt`), tume variant on sa
 - `graphicsLayer` pöörab ka puudutuste koordinaate, lahtrid jäävad klikitavaks (testis kontrollitud).
 
 ### Minimax
-- Sama `MinimaxAi` mis XML-is: `makeMove → rekursioon → undoMove`, alpha-beta, 3×3 lõpuni, suurel laual piiratud sügavus + hindamisfunktsioon (avatud võiduaknad) + ainult nuppude kõrval olevad lahtrid. ViewModelis: `MinimaxAi.forBoard(game).chooseMove(game)` — AI mängib **alati** minimaxiga, valikut ei ole. `makeRandomMove()` jäi mootorisse ainult testide jaoks.
+- Sama `MinimaxAi` mis XML-is: `makeMove → rekursioon → undoMove`, alpha-beta, 3×3 lõpuni, suurel laual piiratud sügavus + hindamisfunktsioon (avatud võiduaknad) + ainult nuppude kõrval olevad lahtrid. ViewModelis: `MinimaxAi.forBoard(game).chooseMove(game)` — AI mängib **alati** minimaxiga, valikut ei ole. Mootor on sama mis XML-is, aga ilma osadeta, mida see rakendus ei kasuta: `makeRandomMove()`, `toBoardString()`, `fromMoves()` ja `moveHistory` on eemaldatud (Compose'is hoiab olekut ViewModel, käikude ajalugu Bundle'isse salvestada pole vaja). Testide abifunktsioonid `playRandomMove` ja `gameFromMoves` on `src/test/.../TestMoves.kt`-s.
 - Jookseb `viewModelScope` korutiinis main-lõimel pärast `delay`-d; mõõdetult < 100 ms, seega taustalõime ei teinud.
 
 ---
